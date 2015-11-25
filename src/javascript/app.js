@@ -16,6 +16,9 @@ Ext.define("stories-by-custom-field", {
     groupingFieldxtypeMapping: {
         iteration: {
             xtype: 'rallyiterationcombobox'
+        },
+        release: {
+            xtype: 'rallyreleasecombobox'
         }
     },
 
@@ -112,6 +115,20 @@ Ext.define("stories-by-custom-field", {
             } else {
                 return [{
                     property: 'Iteration',
+                    value: ""
+                }];
+            }
+        }
+        if (this.getGroupingField() === 'Release'){
+            this.logger.log('Release Filter', cmp.getRecord().get('name'));
+            if (cmp.getRecord()){
+                return [{
+                    property: 'Release.Name',
+                    value: cmp.getRecord().get('name')
+                }];
+            } else {
+                return [{
+                    property: 'Release',
                     value: ""
                 }];
             }
