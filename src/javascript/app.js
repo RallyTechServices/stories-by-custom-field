@@ -53,7 +53,7 @@ Ext.define("stories-by-custom-field", {
         var groupFieldConfig = this.getGroupingFieldControlConfig();
         groupFieldConfig.fieldLabel = this.model.getField(this.getGroupingField()).displayName;
         groupFieldConfig.labelAlign = 'right';
-        groupFieldConfig.padding = 15;
+        groupFieldConfig.margin = '15 15 0 0';
 
         this.down('#selector_box').add(groupFieldConfig)
             .on('change', this.updateSummary, this);

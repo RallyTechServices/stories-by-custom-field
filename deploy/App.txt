@@ -3,11 +3,11 @@
 <head>
     <title>Stories by Configured Field</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 24 2015 17:15:24 GMT-0700 (MST) -->
+    <!--  Build Date: Tue Nov 24 2015 19:46:52 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 24 2015 17:15:24 GMT-0700 (MST)";
-        var CHECKSUM = 6816086039;
+        var APP_BUILD_DATE = "Tue Nov 24 2015 19:46:52 GMT-0700 (MST)";
+        var CHECKSUM = 6820381501;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -231,7 +231,7 @@ Ext.define("stories-by-custom-field", {
         var groupFieldConfig = this.getGroupingFieldControlConfig();
         groupFieldConfig.fieldLabel = this.model.getField(this.getGroupingField()).displayName;
         groupFieldConfig.labelAlign = 'right';
-        groupFieldConfig.padding = 15;
+        groupFieldConfig.margin = '15 15 0 0';
 
         this.down('#selector_box').add(groupFieldConfig)
             .on('change', this.updateSummary, this);
