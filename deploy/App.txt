@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stories by Configured Field</title>
+    <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
+    <!--  Build Date: Tue Nov 24 2015 19:54:19 GMT-0700 (MST) -->
+    
+    <script type="text/javascript">
+        var APP_BUILD_DATE = "Tue Nov 24 2015 19:54:19 GMT-0700 (MST)";
+        var CHECKSUM = 6820382319;
+    </script>
+    
+    <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
+
+    <script type="text/javascript">
+        Rally.onReady(function() {
+             
+/**
+ * A link that pops up a version dialog box
+ */
+
+Ext.define('Rally.technicalservices.InfoLink',{
+    extend: 'Rally.ui.dialog.Dialog',
+    alias: 'widget.tsinfolink',
+    
+    /**
+     * @cfg {String} informationHtml
+     * Additional text to be displayed on the popup dialog (for exmaple,
+     * to add a description of the app's use or functionality)
+     */
+    informationHtml: null,
+    
+    /**
+     * 
+     * cfg {String} title
+     * The title for the dialog box
+     */
+    title: "Build Information",
+    
+    defaults: { padding: 5, margin: 5 },
+
+    closable: true,
+     
+    draggable: true,
+
+    autoShow: true,
+   
+    width: 350, 
+    
+    initComponent: function() {
+        var id = Ext.id(this);
+        this.title =  "<span class='icon-help'> </span>" + this.title;
+        this.callParent(arguments);
+    },
+    
+    _generateChecksum: function(string){
+        var chk = 0x12345678,
+            i;
+        string = string.replace(/var CHECKSUM = .*;/,"");
+        string = string.replace(/\s/g,"");  //Remove all whitespace from the string.
+        
+        for (i = 0; i < string.length; i++) {
+            chk += (string.charCodeAt(i) * i);
+        }
+    
+        return chk;
+    },
+    
+    _checkChecksum: function(container) {
+        var deferred = Ext.create('Deft.Deferred');
+        console.log("_checkChecksum", container);
+        var me = this;
+        
+        Ext.Ajax.request({
+            url: document.URL,
+            params: {
+                id: 1
+            },
+            success: function (response) {
+                text = response.responseText;
+                if ( CHECKSUM ) {
+                    if ( CHECKSUM !== me._generateChecksum(text) ) {
+                        console.log("Checksums don't match!");
+                        deferred.resolve(false);
+                        return;
+                    }
+                }
+                deferred.resolve(true);
+            }
+        });
+        
+        return deferred.promise;
+    },
+    
+    afterRender: function() {
+        var app = Rally.getApp();
+        
+        if (! app.isExternal() ) {
+                
+            this._checkChecksum(app).then({
+                scope: this,
+                success: function(result){
+                    if ( !result ) {
+                        this.addDocked({
+                            xtype:'container',
+                            cls: 'build-info',
+                            padding: 2,
+                            html:'<span class="icon-warning"> </span>Checksums do not match'
+                        });
+                    }
+                },
+                failure: function(msg){
+                    console.log("oops:",msg);
+                }
+            });
+        } else {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'... Running externally'
+            });
+        }
+        this.callParent(arguments);
+    },
+    
+    beforeRender: function() {
+        var me = this;
+        this.callParent(arguments);
+
+        if (this.informationHtml) {
+            this.addDocked({
+                xtype: 'component',
+                componentCls: 'intro-panel',
+                padding: 2,
+                html: this.informationHtml
+            });
+        }
+        
+        this.addDocked({
+            xtype:'container',
+            cls: 'build-info',
+            padding: 2,
+            html:"This app was created by the Rally Technical Services Team."
+        });
+        
+        if ( APP_BUILD_DATE ) {
+            this.addDocked({
+                xtype:'container',
+                cls: 'build-info',
+                padding: 2,
+                html:'Build date/time: ' + APP_BUILD_DATE
+            });
+        }
+    }
+});
+
+/*
+ */
+Ext.define('Rally.technicalservices.Logger',{
+    constructor: function(config){
+        Ext.apply(this,config);
+    },
+    log: function(args){
+        var timestamp = "[ " + Ext.util.Format.date(new Date(), "Y-m-d H:i:s.u") + " ]";
+        //var output_args = arguments;
+        //output_args.unshift( [ "[ " + timestamp + " ]" ] );
+        //output_args = Ext.Array.push(output_args,arguments);
+        
+        var output_args = [];
+        output_args = Ext.Array.push(output_args,[timestamp]);
+        output_args = Ext.Array.push(output_args, Ext.Array.slice(arguments,0));
+
+        window.console && console.log.apply(console,output_args);
+    }
+
+});
+
+Ext.define("stories-by-custom-field", {
+    extend: 'Rally.app.App',
+    componentCls: 'app',
+    logger: new Rally.technicalservices.Logger(),
+    config: {
+        defaultSettings: {
+            groupField: 'Iteration'
+        }
+    },
+
+    modelName: 'HierarchicalRequirement',
+    fetch: ['FormattedID','Name','ScheduleState','PlanEstimate','Feature','Iteration','Release','Blocked','Owner'],
+    states: ['Defined','In-Progress','Completed','Accepted'],
+    stateField: 'ScheduleState',
+
+    groupingFieldxtypeMapping: {
+        iteration: {
+            xtype: 'rallyiterationcombobox'
+        },
+        release: {
+            xtype: 'rallyreleasecombobox'
+        }
+    },
+
+    items: [
+        {xtype:'container',itemId:'selector_box'},
+        {xtype:'container',itemId:'display_box'}
+    ],
+    launch: function() {
+        Rally.data.ModelFactory.getModel({
+            type: this.modelName,
+            success: function(model) {
+                this.model = model;
+                model.getField(this.stateField).getAllowedValueStore().load({
+                    callback: function(records, operation, success) {
+                        this.logger.log('callback', records, operation, success);
+                        if (success){
+                            this.states = _.map(records, function(r){ return r.get('StringValue')});
+                            this.logger.log('States: ', this.states);
+                            this.addSelector();
+                        } else {
+                            Rally.ui.notify.Notifier.showError({message: "Error loading State field values: " + operation.error.errors.join(',')});
+                        }
+                    },
+                    scope: this
+                });
+            },
+            scope: this
+        });
+    },
+    addSelector: function(){
+        this.down('#selector_box').removeAll();
+        var groupFieldConfig = this.getGroupingFieldControlConfig();
+        groupFieldConfig.fieldLabel = this.model.getField(this.getGroupingField()).displayName;
+        groupFieldConfig.labelAlign = 'right';
+        groupFieldConfig.margin = '15 15 0 0';
+
+        this.down('#selector_box').add(groupFieldConfig)
+            .on('change', this.updateSummary, this);
+    },
+    updateSummary: function(cb){
+        this.logger.log('updateSummary', cb);
+
+        var fetch = this.fetch.concat([this.getGroupingField]),
+            filters = this.getQueryFilter(cb);
+
+        this.logger.log('updateSummary', fetch, filters);
+
+        var store = Ext.create('Rally.data.wsapi.Store',{
+            model: this.modelName,
+            fetch: fetch,
+            filters: filters,
+            limit: 'Infinity'
+        });
+        store.load({
+            callback: this.mungeModelData,
+            scope: this
+        });
+    },
+
+    mungeModelData: function(records, operation){
+        this.logger.log('mungeModelData', records, operation);
+        var summaryMunger = Ext.create('Rally.technicalservices.StorySummary',{}),
+            stateData = summaryMunger.getStateSummaryData(this.states, records),
+            issuesData = summaryMunger.getIssuesSummaryData(records);
+
+        this.logger.log('mungeModelData data arrays', stateData, issuesData);
+
+        this.down('#display_box').removeAll();
+        this.addTable(stateData, summaryMunger.getStateColumnCfgs());
+        this.addTable(issuesData, summaryMunger.getIssueColumnCfgs());
+
+    },
+    addTable: function(stateData, columnCfgs){
+        var grid = Ext.create('Rally.ui.grid.Grid', {
+            store: Ext.create('Rally.data.custom.Store', {
+                data: stateData
+            }),
+            columnCfgs: columnCfgs,
+            showPagingToolbar: false,
+            maxWidth: 500,
+            padding: 25
+        });
+        this.down('#display_box').add(grid);
+    },
+
+    getQueryFilter: function(cmp){
+        if (this.getGroupingField() === 'Iteration'){
+            this.logger.log('Iteration Filter', cmp.getRecord().get('name'));
+            if (cmp.getRecord()){
+                return [{
+                    property: 'Iteration.Name',
+                    value: cmp.getRecord().get('name')
+                }];
+            } else {
+                return [{
+                    property: 'Iteration',
+                    value: ""
+                }];
+            }
+        }
+        if (this.getGroupingField() === 'Release'){
+            this.logger.log('Release Filter', cmp.getRecord().get('name'));
+            if (cmp.getRecord()){
+                return [{
+                    property: 'Release.Name',
+                    value: cmp.getRecord().get('name')
+                }];
+            } else {
+                return [{
+                    property: 'Release',
+                    value: ""
+                }];
+            }
+        }
+        if (cmp.getValue){
+            return [{
+                property: this.getGroupingField(),
+                value: cmp.getValue()
+            }];
+        }
+        return [{
+            property: this.getGroupingField(),
+            value: ''
+        }];
+    },
+    getGroupingField: function(){
+        return this.getSetting('groupField');
+    },
+    getGroupingFieldControlConfig: function(){
+        return this.groupingFieldxtypeMapping[this.getGroupingField()] || this.getDefaultGroupingFieldConfig();
+    },
+    getDefaultGroupingFieldConfig: function(){
+        return {
+            xtype: 'rallyfieldvaluecombobox',
+            model: this.modelName,
+            field: this.getGroupingField()
+        };
+    },
+    getSettingsFields: function(){
+        return Rally.technicalservices.Settings.getFields(this.modelName)
+    },
+    getOptions: function() {
+        return [
+            {
+                text: 'About...',
+                handler: this._launchInfo,
+                scope: this
+            }
+        ];
+    },
+    
+    _launchInfo: function() {
+        if ( this.about_dialog ) { this.about_dialog.destroy(); }
+        this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
+    },
+    
+    isExternal: function(){
+        return typeof(this.getAppId()) == 'undefined';
+    },
+    
+    //onSettingsUpdate:  Override
+    onSettingsUpdate: function (settings){
+        this.logger.log('onSettingsUpdate',settings);
+        Ext.apply(this, settings);
+        this.launch();
+    }
+});
+
+(function() {
+    var Ext = window.Ext4 || window.Ext;
+
+    Ext.define('Rally.ui.combobox.FieldOptionsCombobox', {
+        requires: [],
+        extend: 'Rally.ui.combobox.FieldComboBox',
+        alias: 'widget.tsfieldoptionscombobox',
+
+        _isNotHidden: function(field) {
+            //We want dropdown fields, iteration, release, state?
+            var allowedFields = ['Iteration','Release'];
+            if (field && Ext.Array.contains(allowedFields, field.name)){
+                return true;
+            }
+
+            if (field && !field.hidden && field.attributeDefinition &&
+                field.attributeDefinition.AttributeType === 'STRING' && field.attributeDefinition.Constrained){
+                return true;
+            }
+            return false;
+        }
+    });
+})();
+Ext.define('Rally.technicalservices.Settings',{
+    singleton: true,
+
+    getFields: function(modelName){
+        var labelWidth = 150;
+
+        return [{
+            xtype: 'tsfieldoptionscombobox',
+            name: 'groupField',
+            model: modelName,
+            labelWidth: labelWidth,
+            labelAlign: 'right',
+            fieldLabel: 'Group Field'
+        }];
+    }
+});
+
+Ext.define('Rally.technicalservices.StorySummary',{
+
+    issues:[{
+        type: 'noFeature',
+        displayName: 'Stories Missing Features',
+        pointsFn: function(record){
+            if (!record.get('Feature')){
+                return record.get('PlanEstimate') || 0;
+            }
+            return 0;
+        },
+        countFn: function(record){
+            if (!record.get('Feature')){
+                return 1;
+            }
+            return 0;
+        }
+    },{
+        type: 'noPlanEstimate',
+        displayName: 'Unestimated Stories',
+        countFn: function(record){
+            if (record.get('PlanEstimate') && record.get('PlanEstimate') >= 0){
+                return 0;
+            }
+            return 1;
+        }
+    },{
+        type: 'blockedStories',
+        displayName: 'Blocked Stories',
+        countFn: function(record){
+            if (record.get('Blocked') && record.get('Blocked') === true){
+                return 1;
+            }
+            return 0;
+        },
+        pointsFn: function(record){
+            if (record.get('Blocked') && record.get('Blocked') === true){
+                return record.get('PlanEstimate') || 0;
+            }
+            return 0;
+        }
+    },{
+        type: 'splitStories',
+        displayName: 'Carry Over Stories',
+        countFn: function(record){
+            var regex = new RegExp("^\\[Continued\\]", "i");
+            console.log('carryover', regex.test(record.get('Name')), record.get('Name'));
+            if (regex.test(record.get('Name'))){
+                return 1;
+            }
+            return 0;
+        },
+        pointsFn: function(record){
+            var regex = new RegExp("^\\[Continued\\]", "i");
+            if (regex.test(record.get('Name'))){
+                return record.get('PlanEstimate') || 0;
+            }
+            return 0;
+        }
+    },{
+        type: 'missingRelease',
+        displayName: 'Missing Release',
+        countFn: function(record){
+            if (!record.get('Release')){
+                return 1;
+            }
+            return 0;
+        },
+        pointsFn: function(record){
+            if (!record.get('Release')){
+                return record.get('PlanEstimate') || 0;
+            }
+            return 0;
+        }
+    },{
+        type: 'missingOwner',
+        displayName: 'Missing Owner',
+        countFn: function(record){
+            if (!record.get('Owner')){
+                return 1;
+            }
+            return 0;
+        },
+        pointsFn: function(record){
+            if (!record.get('Owner')){
+                return record.get('PlanEstimate') || 0;
+            }
+            return 0;
+        }
+    }],
+
+    getStateColumnCfgs: function(){
+        return [{
+            dataIndex: 'state',
+            text: 'State',
+            flex: 1
+        },{
+            dataIndex: 'count',
+            text: 'Story Count'
+        },{
+            dataIndex: 'points',
+            text: 'Total Points'
+        }];
+    },
+    getIssueColumnCfgs: function(){
+        return [{
+            dataIndex: 'issueName',
+            text: 'Potential Issue List',
+            flex: 1
+        },{
+            dataIndex: 'count',
+            text: 'Count'
+        },{
+            dataIndex: 'points',
+            text: 'Points'
+        }];
+    },
+    _initializeSummary: function(types){
+        var summary = {};
+        _.each(types, function(t){
+            summary[t] = {
+                points: 0,
+                count: 0
+            };
+        });
+        return summary;
+    },
+
+    getStateSummaryData: function(states, records){
+       var stateSummary = this._initializeSummary(states),
+           totalCount = 0,
+           totalPoints = 0,
+           acceptedCount = 0,
+           acceptedPoints = 0,
+           acceptedStates = ['Accepted'];
+
+        _.each(records, function(r){
+            var ss = r.get('ScheduleState'),
+                planEstimate = r.get('PlanEstimate') || 0 ;
+
+            if (stateSummary[ss]){
+                stateSummary[ss].count++;
+                stateSummary[ss].points = stateSummary[ss].points + planEstimate;
+            }
+            totalCount++;
+            totalPoints += planEstimate;
+
+            if (Ext.Array.contains(acceptedStates, ss)){
+                acceptedCount++;
+                acceptedPoints += planEstimate;
+            }
+        });
+
+        var data = _.map(states, function(s){
+            return {state: s, count: stateSummary[s].count || 0, points: stateSummary[s].points || 0};
+        });
+        data.push({state: 'Total',
+            count: totalCount,
+            points: totalPoints
+        });
+
+        var acceptedCountPct = acceptedCount/totalCount * 100,
+            acceptedPointsPct = acceptedPoints/totalPoints * 100;
+
+        data.push({state: '% Accepted',
+            count: !isNaN(acceptedCountPct) ? acceptedCountPct.toFixed(1) + " %" : "NaN",
+            points:!isNaN(acceptedPointsPct) ? acceptedPointsPct.toFixed(1) + " %" : "NaN"
+        });
+
+        return data;
+    },
+    getIssuesSummaryData: function(records){
+        var data = [];
+
+        _.each(this.issues, function(issue){
+            var row = {type: issue.type, issueName: issue.displayName, count: 0, points: 0};
+            _.each(records, function(r){
+                if (issue.countFn){
+                    row.count += issue.countFn(r);
+                }
+                if (issue.pointsFn){
+                    row.points += issue.pointsFn(r);
+                } else {
+                    row.points = '--';
+                }
+            });
+            data.push(row);
+        });
+        return data;
+    }
+});
+            
+               Rally.launchApp('stories-by-custom-field', {
+                   name: 'Stories by Configured Field'
+               });
+        });
+    </script>
+    
+    <style type="text/css">
+
+.app {
+}
+.tsinfolink {
+    position:absolute;
+    right:0px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    text-align: center;
+    color: white;
+    background: #C0C0C0;
+    border-style: solid;
+    border-width: 1px;
+    margin-top: 25px;
+    margin-right: 5px;
+    cursor: pointer;
+}
+    </style>
+
+</head>
+<body></body>
+</html>
