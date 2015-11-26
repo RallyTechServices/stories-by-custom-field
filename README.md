@@ -1,4 +1,4 @@
-#Stories by Configured Field
+#Story Summary by Field
 
 This app shows a summary of the all of the stories in scope that match a particular field value.  
 
