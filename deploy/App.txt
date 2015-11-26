@@ -3,11 +3,11 @@
 <head>
     <title>Stories by Configured Field</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 24 2015 19:54:19 GMT-0700 (MST) -->
+    <!--  Build Date: Thu Nov 26 2015 05:51:26 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 24 2015 19:54:19 GMT-0700 (MST)";
-        var CHECKSUM = 6820382319;
+        var APP_BUILD_DATE = "Thu Nov 26 2015 05:51:26 GMT-0700 (MST)";
+        var CHECKSUM = 7803521413;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -191,9 +191,12 @@ Ext.define("stories-by-custom-field", {
     states: ['Defined','In-Progress','Completed','Accepted'],
     stateField: 'ScheduleState',
 
-    groupingFieldxtypeMapping: {
+    groupingFieldTypeMapping: {
         iteration: {
-            xtype: 'rallyiterationcombobox'
+            xtype: 'rallyiterationcombobox',
+            storeConfig: {
+                fetch: ['Name','StartDate','EndDate']
+            }
         },
         release: {
             xtype: 'rallyreleasecombobox'
@@ -232,6 +235,7 @@ Ext.define("stories-by-custom-field", {
         groupFieldConfig.fieldLabel = this.model.getField(this.getGroupingField()).displayName;
         groupFieldConfig.labelAlign = 'right';
         groupFieldConfig.margin = '15 15 0 0';
+        groupFieldConfig.width = 300;
 
         this.down('#selector_box').add(groupFieldConfig)
             .on('change', this.updateSummary, this);
@@ -276,62 +280,84 @@ Ext.define("stories-by-custom-field", {
             }),
             columnCfgs: columnCfgs,
             showPagingToolbar: false,
-            maxWidth: 500,
             padding: 25
         });
         this.down('#display_box').add(grid);
     },
 
     getQueryFilter: function(cmp){
+        this.logger.log('getQueryFilter', cmp.getValue());
+        var filters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'DirectChildrenCount',
+            value: 0
+        });
+
         if (this.getGroupingField() === 'Iteration'){
-            this.logger.log('Iteration Filter', cmp.getRecord().get('name'));
-            if (cmp.getRecord()){
-                return [{
+            if (cmp.getValue()){
+                this.logger.log('Iteration', cmp.getRecord().get('StartDate'))
+                filters = filters.and({
+                    property: 'Iteration.StartDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('StartDate'))
+                });
+                filters = filters.and({
+                    property: 'Iteration.EndDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('EndDate'))
+                });
+                return filters.and({
                     property: 'Iteration.Name',
-                    value: cmp.getRecord().get('name')
-                }];
+                    value: cmp.getRecord().get('name') || cmp.getRecord().get('Name')
+                });
             } else {
-                return [{
+                return filters.and({
                     property: 'Iteration',
                     value: ""
-                }];
+                });
             }
         }
         if (this.getGroupingField() === 'Release'){
-            this.logger.log('Release Filter', cmp.getRecord().get('name'));
-            if (cmp.getRecord()){
-                return [{
+            if (cmp.getValue()){
+                filters = filters.and({
+                    property: 'Release.ReleaseStartDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('ReleaseStartDate'))
+                });
+                filters = filters.and({
+                    property: 'Release.ReleaseDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('ReleaseDate'))
+                });
+                return filters.and({
                     property: 'Release.Name',
-                    value: cmp.getRecord().get('name')
-                }];
+                    value: cmp.getRecord().get('Name')
+                });
             } else {
-                return [{
+                return filters.and({
                     property: 'Release',
                     value: ""
-                }];
+                });
             }
         }
-        if (cmp.getValue){
-            return [{
+        if (cmp.getValue()){
+            return filters.and({
                 property: this.getGroupingField(),
                 value: cmp.getValue()
-            }];
+            });
         }
-        return [{
+        return filters.and({
             property: this.getGroupingField(),
             value: ''
-        }];
+        });
     },
     getGroupingField: function(){
         return this.getSetting('groupField');
     },
     getGroupingFieldControlConfig: function(){
-        return this.groupingFieldxtypeMapping[this.getGroupingField()] || this.getDefaultGroupingFieldConfig();
+        this.logger.log('getGroupingFieldControlConfig',this.groupingFieldTypeMapping[this.getGroupingField()])
+        return this.groupingFieldTypeMapping[this.getGroupingField().toLowerCase()] || this.getDefaultGroupingFieldConfig();
     },
     getDefaultGroupingFieldConfig: function(){
         return {
             xtype: 'rallyfieldvaluecombobox',
             model: this.modelName,
+            valueField: 'value',
             field: this.getGroupingField()
         };
     },
@@ -426,7 +452,7 @@ Ext.define('Rally.technicalservices.StorySummary',{
         type: 'noPlanEstimate',
         displayName: 'Unestimated Stories',
         countFn: function(record){
-            if (record.get('PlanEstimate') && record.get('PlanEstimate') >= 0){
+            if (record.get('PlanEstimate') >= 0){
                 return 0;
             }
             return 1;

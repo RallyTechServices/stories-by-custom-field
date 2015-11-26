@@ -19,7 +19,7 @@ Ext.define('Rally.technicalservices.StorySummary',{
         type: 'noPlanEstimate',
         displayName: 'Unestimated Stories',
         countFn: function(record){
-            if (record.get('PlanEstimate') && record.get('PlanEstimate') >= 0){
+            if (record.get('PlanEstimate') >= 0){
                 return 0;
             }
             return 1;

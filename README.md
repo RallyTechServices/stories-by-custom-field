@@ -8,4 +8,6 @@ Any custom dropdown field, Iteration or Release can be used to group and summari
 The summaries include the number and points for user story states and also the number and points for 
 potential user story issues.  
 
+Data set and summaries only include "leaf" stories, which are stories that do not have child stories.  
+
 ![ScreenShot](/images/stories-by-field.png)
