@@ -3,11 +3,11 @@
 <head>
     <title>Stories by Configured Field</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Nov 26 2015 05:46:12 GMT-0700 (MST) -->
+    <!--  Build Date: Thu Nov 26 2015 05:48:43 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Nov 26 2015 05:46:12 GMT-0700 (MST)";
-        var CHECKSUM = 7592452993;
+        var APP_BUILD_DATE = "Thu Nov 26 2015 05:48:43 GMT-0700 (MST)";
+        var CHECKSUM = 7561375534;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -445,7 +445,7 @@ Ext.define('Rally.technicalservices.StorySummary',{
         type: 'noPlanEstimate',
         displayName: 'Unestimated Stories',
         countFn: function(record){
-            if (record.get('PlanEstimate') && record.get('PlanEstimate') >= 0){
+            if (record.get('PlanEstimate') >= 0){
                 return 0;
             }
             return 1;

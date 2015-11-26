@@ -3,10 +3,10 @@
 <head>
     <title>Stories by Configured Field</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Nov 26 2015 05:46:12 GMT-0700 (MST) -->
+    <!--  Build Date: Thu Nov 26 2015 05:48:43 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Nov 26 2015 05:46:12 GMT-0700 (MST)";
+        var APP_BUILD_DATE = "Thu Nov 26 2015 05:48:43 GMT-0700 (MST)";
         var CHECKSUM = [%= checksum %];
     </script>
     
