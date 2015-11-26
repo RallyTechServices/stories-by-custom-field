@@ -3,11 +3,11 @@
 <head>
     <title>Stories by Configured Field</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Thu Nov 26 2015 05:48:43 GMT-0700 (MST) -->
+    <!--  Build Date: Thu Nov 26 2015 05:51:26 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Nov 26 2015 05:48:43 GMT-0700 (MST)";
-        var CHECKSUM = 7561375534;
+        var APP_BUILD_DATE = "Thu Nov 26 2015 05:51:26 GMT-0700 (MST)";
+        var CHECKSUM = 7803521413;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -315,11 +315,18 @@ Ext.define("stories-by-custom-field", {
             }
         }
         if (this.getGroupingField() === 'Release'){
-            this.logger.log('Release Filter', cmp.getRecord().get('name'));
-            if (cmp.getRecord()){
+            if (cmp.getValue()){
+                filters = filters.and({
+                    property: 'Release.ReleaseStartDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('ReleaseStartDate'))
+                });
+                filters = filters.and({
+                    property: 'Release.ReleaseDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('ReleaseDate'))
+                });
                 return filters.and({
                     property: 'Release.Name',
-                    value: cmp.getRecord().get('name')
+                    value: cmp.getRecord().get('Name')
                 });
             } else {
                 return filters.and({

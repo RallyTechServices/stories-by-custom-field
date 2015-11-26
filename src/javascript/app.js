@@ -137,11 +137,18 @@ Ext.define("stories-by-custom-field", {
             }
         }
         if (this.getGroupingField() === 'Release'){
-            this.logger.log('Release Filter', cmp.getRecord().get('name'));
-            if (cmp.getRecord()){
+            if (cmp.getValue()){
+                filters = filters.and({
+                    property: 'Release.ReleaseStartDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('ReleaseStartDate'))
+                });
+                filters = filters.and({
+                    property: 'Release.ReleaseDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('ReleaseDate'))
+                });
                 return filters.and({
                     property: 'Release.Name',
-                    value: cmp.getRecord().get('name')
+                    value: cmp.getRecord().get('Name')
                 });
             } else {
                 return filters.and({
