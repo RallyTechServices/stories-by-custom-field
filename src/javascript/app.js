@@ -105,44 +105,49 @@ Ext.define("stories-by-custom-field", {
     },
 
     getQueryFilter: function(cmp){
+        this.logger.log('getQueryFilter', cmp.getValue());
+        var filters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'DirectChildrenCount',
+            value: 0
+        });
+
         if (this.getGroupingField() === 'Iteration'){
-            this.logger.log('Iteration Filter', cmp.getRecord().get('name'));
-            if (cmp.getRecord()){
-                return [{
+            if (cmp.getValue()){
+                return filters.and({
                     property: 'Iteration.Name',
-                    value: cmp.getRecord().get('name')
-                }];
+                    value: cmp.getRecord().get('name') || cmp.getRecord().get('Name')
+                });
             } else {
-                return [{
+                return filters.and({
                     property: 'Iteration',
                     value: ""
-                }];
+                });
             }
         }
         if (this.getGroupingField() === 'Release'){
             this.logger.log('Release Filter', cmp.getRecord().get('name'));
             if (cmp.getRecord()){
-                return [{
+                return filters.and({
                     property: 'Release.Name',
                     value: cmp.getRecord().get('name')
-                }];
+                });
             } else {
-                return [{
+                return filters.and({
                     property: 'Release',
                     value: ""
-                }];
+                });
             }
         }
-        if (cmp.getValue){
-            return [{
+        if (cmp.getValue()){
+            return filters.and({
                 property: this.getGroupingField(),
                 value: cmp.getValue()
-            }];
+            });
         }
-        return [{
+        return filters.and({
             property: this.getGroupingField(),
             value: ''
-        }];
+        });
     },
     getGroupingField: function(){
         return this.getSetting('groupField');
@@ -154,6 +159,7 @@ Ext.define("stories-by-custom-field", {
         return {
             xtype: 'rallyfieldvaluecombobox',
             model: this.modelName,
+            valueField: 'value',
             field: this.getGroupingField()
         };
     },

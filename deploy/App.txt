@@ -3,11 +3,11 @@
 <head>
     <title>Stories by Configured Field</title>
     <!--  (c) 2015 Rally Software Development Corp.  All Rights Reserved. -->
-    <!--  Build Date: Tue Nov 24 2015 19:54:19 GMT-0700 (MST) -->
+    <!--  Build Date: Thu Nov 26 2015 05:28:14 GMT-0700 (MST) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Nov 24 2015 19:54:19 GMT-0700 (MST)";
-        var CHECKSUM = 6820382319;
+        var APP_BUILD_DATE = "Thu Nov 26 2015 05:28:14 GMT-0700 (MST)";
+        var CHECKSUM = 7032113903;
     </script>
     
     <script type="text/javascript" src="/apps/2.0/sdk.js"></script>
@@ -283,44 +283,49 @@ Ext.define("stories-by-custom-field", {
     },
 
     getQueryFilter: function(cmp){
+        this.logger.log('getQueryFilter', cmp.getValue());
+        var filters = Ext.create('Rally.data.wsapi.Filter',{
+            property: 'DirectChildrenCount',
+            value: 0
+        });
+
         if (this.getGroupingField() === 'Iteration'){
-            this.logger.log('Iteration Filter', cmp.getRecord().get('name'));
-            if (cmp.getRecord()){
-                return [{
+            if (cmp.getValue()){
+                return filters.and({
                     property: 'Iteration.Name',
-                    value: cmp.getRecord().get('name')
-                }];
+                    value: cmp.getRecord().get('name') || cmp.getRecord().get('Name')
+                });
             } else {
-                return [{
+                return filters.and({
                     property: 'Iteration',
                     value: ""
-                }];
+                });
             }
         }
         if (this.getGroupingField() === 'Release'){
             this.logger.log('Release Filter', cmp.getRecord().get('name'));
             if (cmp.getRecord()){
-                return [{
+                return filters.and({
                     property: 'Release.Name',
                     value: cmp.getRecord().get('name')
-                }];
+                });
             } else {
-                return [{
+                return filters.and({
                     property: 'Release',
                     value: ""
-                }];
+                });
             }
         }
-        if (cmp.getValue){
-            return [{
+        if (cmp.getValue()){
+            return filters.and({
                 property: this.getGroupingField(),
                 value: cmp.getValue()
-            }];
+            });
         }
-        return [{
+        return filters.and({
             property: this.getGroupingField(),
             value: ''
-        }];
+        });
     },
     getGroupingField: function(){
         return this.getSetting('groupField');
@@ -332,6 +337,7 @@ Ext.define("stories-by-custom-field", {
         return {
             xtype: 'rallyfieldvaluecombobox',
             model: this.modelName,
+            valueField: 'value',
             field: this.getGroupingField()
         };
     },
