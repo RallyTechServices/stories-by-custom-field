@@ -13,9 +13,12 @@ Ext.define("stories-by-custom-field", {
     states: ['Defined','In-Progress','Completed','Accepted'],
     stateField: 'ScheduleState',
 
-    groupingFieldxtypeMapping: {
+    groupingFieldTypeMapping: {
         iteration: {
-            xtype: 'rallyiterationcombobox'
+            xtype: 'rallyiterationcombobox',
+            storeConfig: {
+                fetch: ['Name','StartDate','EndDate']
+            }
         },
         release: {
             xtype: 'rallyreleasecombobox'
@@ -54,6 +57,7 @@ Ext.define("stories-by-custom-field", {
         groupFieldConfig.fieldLabel = this.model.getField(this.getGroupingField()).displayName;
         groupFieldConfig.labelAlign = 'right';
         groupFieldConfig.margin = '15 15 0 0';
+        groupFieldConfig.width = 300;
 
         this.down('#selector_box').add(groupFieldConfig)
             .on('change', this.updateSummary, this);
@@ -98,7 +102,6 @@ Ext.define("stories-by-custom-field", {
             }),
             columnCfgs: columnCfgs,
             showPagingToolbar: false,
-            maxWidth: 500,
             padding: 25
         });
         this.down('#display_box').add(grid);
@@ -113,6 +116,15 @@ Ext.define("stories-by-custom-field", {
 
         if (this.getGroupingField() === 'Iteration'){
             if (cmp.getValue()){
+                this.logger.log('Iteration', cmp.getRecord().get('StartDate'))
+                filters = filters.and({
+                    property: 'Iteration.StartDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('StartDate'))
+                });
+                filters = filters.and({
+                    property: 'Iteration.EndDate',
+                    value: Rally.util.DateTime.toIsoString(cmp.getRecord().get('EndDate'))
+                });
                 return filters.and({
                     property: 'Iteration.Name',
                     value: cmp.getRecord().get('name') || cmp.getRecord().get('Name')
@@ -153,7 +165,8 @@ Ext.define("stories-by-custom-field", {
         return this.getSetting('groupField');
     },
     getGroupingFieldControlConfig: function(){
-        return this.groupingFieldxtypeMapping[this.getGroupingField()] || this.getDefaultGroupingFieldConfig();
+        this.logger.log('getGroupingFieldControlConfig',this.groupingFieldTypeMapping[this.getGroupingField()])
+        return this.groupingFieldTypeMapping[this.getGroupingField().toLowerCase()] || this.getDefaultGroupingFieldConfig();
     },
     getDefaultGroupingFieldConfig: function(){
         return {
