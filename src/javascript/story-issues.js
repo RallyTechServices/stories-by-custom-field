@@ -19,7 +19,7 @@ Ext.define('Rally.technicalservices.StorySummary',{
         type: 'noPlanEstimate',
         displayName: 'Unestimated Stories',
         countFn: function(record){
-            if (record.get('PlanEstimate') >= 0){
+            if (record.get('PlanEstimate') === 0 || record.get('PlanEstimate') > 0){
                 return 0;
             }
             return 1;
@@ -44,7 +44,7 @@ Ext.define('Rally.technicalservices.StorySummary',{
         displayName: 'Carry Over Stories',
         countFn: function(record){
             var regex = new RegExp("^\\[Continued\\]", "i");
-            console.log('carryover', regex.test(record.get('Name')), record.get('Name'));
+            //console.log('carryover', regex.test(record.get('Name')), record.get('Name'));
             if (regex.test(record.get('Name'))){
                 return 1;
             }
@@ -76,13 +76,13 @@ Ext.define('Rally.technicalservices.StorySummary',{
         type: 'missingOwner',
         displayName: 'Missing Owner',
         countFn: function(record){
-            if (!record.get('Owner')){
+            if (!record.get('Owner') || !record.get('Owner')._refObjectName || record.get('Owner')._refObjectName.length === 0){
                 return 1;
             }
             return 0;
         },
         pointsFn: function(record){
-            if (!record.get('Owner')){
+            if (!record.get('Owner') || !record.get('Owner')._refObjectName || record.get('Owner')._refObjectName.length === 0){
                 return record.get('PlanEstimate') || 0;
             }
             return 0;
